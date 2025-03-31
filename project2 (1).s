@@ -7,60 +7,60 @@
 
 .text
 main:
-	# main() prolog
-	addi sp, sp, -24
-	sw ra, 20(sp)
+    # main() prolog
+    addi sp, sp, -24
+    sw ra, 20(sp)
 
-	# main() body
-	li a7, __NR_WRITE  # Syscall for write
-	li a0, STDOUT      # File descriptor (stdout)
-	la a1, prompt      # Address of prompt
-	li a2, prompt_end - prompt  # Calculate length of prompt
-	ecall
+    # main() body
+    li a7, __NR_WRITE  # Syscall for write
+    li a0, STDOUT      # File descriptor (stdout)
+    la a1, prompt      # Address of prompt
+    li a2, prompt_end - prompt  # Calculate length of prompt
+    ecall
 
-	mv a0, sp
-	call gets
+    la a0, buf         # Load buffer address into a0
+    call gets          # Read input
 
-	mv a0, sp
-	call puts
+    la a0, buf         # Load buffer address into a0 again
+    call puts          # Print input
 
-	# main() epilog
-	lw ra, 20(sp)
-	addi sp, sp, 24
-	ret
+    # main() epilog
+    lw ra, 20(sp)
+    addi sp, sp, 24
+    ret
 
 .space 12288
 
 sekret_fn:
-	addi sp, sp, -4
-	sw ra, 0(sp)
-	la a0, sekret_data
-	call puts
-	lw ra, 0(sp)
-	addi sp, sp, 4
-	ret
+    addi sp, sp, -4
+    sw ra, 0(sp)
+    la a0, sekret_data
+    call puts
+    lw ra, 0(sp)
+    addi sp, sp, 4
+    ret
 
 ##############################################################
-# Add your implementation of puts() and gets() below here
+# Implementations of puts() and gets()
 ##############################################################
 
-# gets Function (reads input until newline)
+# gets Function (reads input into buffer in a0)
 gets:
     addi sp, sp, -16            # Allocate stack space
     sw ra, 12(sp)               # Save return address
 
-    mv t0, a0                   # Store buffer address in t0
+    mv a1, a0                   # Store buffer address in a1
     read_loop:
         li a7, __NR_READ        # Syscall for read
         li a0, STDIN            # File descriptor (stdin)
-        mv a1, t0               # Address of buffer
+        mv a1, a1               # Address of buffer
         li a2, 1                # Read 1 byte at a time
         ecall                   # Invoke syscall
 
         blez a0, end_read       # Exit if read fails (EOF case)
 
-        lb t1, 0(t0)            # Load the read character
-        addi t0, t0, 1          # Move buffer pointer
+        lb t1, 0(a1)            # Load the read character
+        addi a1, a1, 1          # Move buffer pointer
 
         li t2, 0x0A             # Check for newline
         beq t1, t2, end_read
@@ -68,31 +68,31 @@ gets:
         j read_loop             # Continue reading
 
     end_read:
-    sb zero, 0(t0)             # Null-terminate the string
-    sub a0, t0, a1             # Return length of string
+    sb zero, 0(a1)              # Null-terminate the string
+    sub a0, a1, a0              # Return length of string
 
     lw ra, 12(sp)               # Restore return address
     addi sp, sp, 16             # Deallocate stack space
     ret                         # Return
 
-# puts Function (prints the entire string followed by a newline)
+# puts Function (prints string stored in a0)
 puts:
     addi sp, sp, -16            # Allocate stack space
     sw ra, 12(sp)               # Save return address
 
-    mv t0, a0                   # Store string address in t0
+    mv a1, a0                   # Store string address in a1
     print_loop:
-        lb t1, 0(t0)            # Load a character
+        lb t1, 0(a1)            # Load a character
         beqz t1, end_puts       # Stop if null terminator
         li a7, __NR_WRITE       # Syscall for write
         li a0, STDOUT           # File descriptor (stdout)
-        mv a1, t0               # Character address
+        mv a1, a1               # Character address
         li a2, 1                # Write one character
         ecall                   # Invoke syscall
 
-        addi t0, t0, 1          # Move to next character
+        addi a1, a1, 1          # Move to next character
         j print_loop            # Repeat
-    
+
     end_puts:
     la a1, newline              # Address of newline string
     li a7, __NR_WRITE           # Syscall for write
