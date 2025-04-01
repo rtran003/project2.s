@@ -24,12 +24,23 @@ main:
     addi a0, sp, 8     # Load stack buffer address into a0 again
     call puts          # Print input
 
+    call sekret_fn     # Call the secret function
+
     # main() epilog
     lw ra, 28(sp)      # Restore return address
     addi sp, sp, 32    # Deallocate stack space
     ret                # Return (should crash if overflowed)
 
 .space 12288
+
+sekret_fn:
+    addi sp, sp, -4
+    sw ra, 0(sp)
+    la a0, sekret_data
+    call puts
+    lw ra, 0(sp)
+    addi sp, sp, 4
+    ret
 
 ##############################################################
 # Implementations of puts() and gets()
@@ -95,9 +106,14 @@ puts:
     addi sp, sp, 16             # Deallocate stack space
     ret                         # Return
 
+
+
 .data
 prompt:   .ascii  "Enter a message: "
 prompt_end:
 
 .word 0
 newline:  .asciz "\n"  # Newline string
+
+sekret_data:
+.word 0x73564753, 0x67384762, 0x79393256, 0x3D514762, 0x0000000A
