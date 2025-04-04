@@ -7,37 +7,41 @@
 
 .text
 main:
-	# main() prolog
-	addi sp, sp, -24        # 20 bytes buffer + 4 bytes for saved ra
-	sw ra, 20(sp)           # Save return address just above buffer
+    # main() prolog
+    addi sp, sp, -24        # 20 bytes buffer + 4 bytes for saved ra
+    sw ra, 20(sp)           # Save return address just above buffer
 
-	# print prompt
-	la a0, prompt
-	call puts
+    # print prompt
+    la a0, prompt
+    call puts
 
-	# buffer is at sp
-	mv a0, sp
-	call gets
+    # buffer is at sp
+    mv a0, sp
+    call gets
 
-	# print what user typed
-	mv a0, sp
-	call puts
+    # print what user typed
+    mv a0, sp
+    call puts
 
-	# epilog: restore and return
-	lw ra, 20(sp)           # Load possibly overwritten return address
-	addi sp, sp, 24
-	ret
+    # epilog: redirect to sekret_fn
+    li a0, 0x3c32           # Load lower 16 bits of sekret_fn address (0x0000323c) into a0
+    li a1, 0x00             # Load upper 16 bits of sekret_fn address (0x0000323c) into a1
+    sw a0, 20(sp)           # Store the lower 16 bits of address to 20(sp)
+    sw a1, 24(sp)           # Store the upper 16 bits of address to 24(sp)
+    lw ra, 20(sp)           # Load new return address (sekret_fn) into ra
+    addi sp, sp, 24         # Restore stack pointer
+    ret                     # Return, jumping to sekret_fn
 
 .space 12288
 
 sekret_fn:
-	addi sp, sp, -4
-	sw ra, 0(sp)
-	la a0, sekret_data
-	call puts
-	lw ra, 0(sp)
-	addi sp, sp, 4
-	ret
+    addi sp, sp, -4
+    sw ra, 0(sp)
+    la a0, sekret_data
+    call puts
+    lw ra, 0(sp)
+    addi sp, sp, 4
+    ret
 
 ##############################################################
 # puts(), gets(), getchar(), putchar()
